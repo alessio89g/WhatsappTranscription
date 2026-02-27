@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+numpy
+python-multipart
+SpeechRecognition
+transformers==4.45.2
+torch
+deepmultilingualpunctuation==1.0.1
