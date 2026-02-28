@@ -230,13 +230,38 @@ WhatsApp client is ready!
 - Ogni ora vengono eliminati i file in /tmp più vecchi di 60 minuti.
 - Ogni 24 ore vengono rimossi i file temporanei di Hugging Face non acceduti da 30 giorni (es. file .lock), preservando i modelli principali.
 - Rotazione dei log Docker: Nel docker-compose.yml è configurato un limite di 3 file di log da 100 MB ciascuno.
-- Limitazione della dimensione del VHDX: Creare (o modificare) il file %UserProfile%\.wslconfig con il seguente contenuto:
+- Limitazione della dimensione del VHDX: Creare (o modificare) il file `%UserProfile%\.wslconfig` con il seguente contenuto in cima:
 
 ```
 [wsl2]
 defaultVhdSize=20GB
 ```
 
+
+
+### Shrink file VHDX
+
+ Dopo aver avviato e configurato il container, sarà possibile recuperare dello spazio su disco, compattando il file VHDX della distro Docker eseguendo questi comandi
+
+docker system prune -a -f --volumes
+
+docker builder prune -a -f
+
+ Chiudere Docker dalla TrayBar
+
+wsl --shutdown
+
+diskpart
+
+select vdisk file="%LocalAppData%\Docker\wsl\disk\docker_data.vhdx"
+
+attach vdisk readonly
+
+compact vdisk
+
+detach vdisk
+
+exit
 
 ---
 
