@@ -93,30 +93,32 @@ Il container include tre componenti principali che cooperano tra loro:
 
 ```
 WhatsappTranscription/
-├── docker-compose.yml          # Configurazione Docker Compose
-├── Dockerfile                  # Definizione container
-├── docker-entrypoint.sh        # Script avvio container
-├── supervisord.conf            # Configurazione Supervisord
-├── .env                        # Variabili d'ambiente
-├── .dockerignore               # Esclusioni build Docker
+├── docker-compose.yml          # Configurazione Docker Compose (usa env_file, bind mount del codice sorgente)
+├── Dockerfile                  # Definizione del container
+├── docker-entrypoint.sh        # Script di avvio
+├── supervisord.conf            # Configurazione Supervisor (esegue Node e Python)
+├── .env                        # Variabili d'ambiente (caricate tramite env_file)
+├── .dockerignore               # Esclusioni per la build Docker
 ├── .gitignore                  # Esclusioni Git
 ├── package.json                # Dipendenze Node.js
-├── index.js                    # Bot WhatsApp (Node.js)
+├── index.js                    # Bot WhatsApp con supporto per esclusione gruppi
 ├── README.md                   # Questo file
 ├── server/
-│   ├── app.py                  # Server trascrizione (Python)
+│   ├── app.py                  # Server FastAPI per la trascrizione
 │   └── requirements.txt        # Dipendenze Python
-└── Volumes/                     # Dati persistenti su filesystem Windows
-    ├── session_data/            # Sessione WhatsApp (ex ./session_data)
-    ├── cache/                   # Modelli Hugging Face (/root/.cache)
-    ├── root_config/             # Cache di Chrome (/root/.config)
-    ├── var_cache/               # Cache di sistema (/var/cache)
-    ├── var_log/                 # Log di sistema (/var/log)
-    └── var_tmp/                 # File temporanei persistenti (/var/tmp)
+└── Volumes/                    # Dati persistenti (sessione, modelli, cache)
+    ├── session_data/           # Sessione WhatsApp
+    ├── cache/                  # Modelli Hugging Face
+    ├── root_config/            # Configurazione/cache di Chrome
+    ├── var_cache/              # Cache di sistema
+    ├── var_log/                # Log di sistema
+    └── var_tmp/                # File temporanei persistenti
 
 ```
-Nota: Tutte le cartelle sotto Volumes/ vengono montate come volumi Docker su percorsi specifici del container. In questo modo i dati critici (sessione, modelli, cache) risiedono direttamente sul filesystem Windows, evitando la crescita incontrollata del file VHDX di WSL2.
 
+> **Note:**  
+Tutte le cartelle sotto `Volumes/` sono montate come volumi Docker in percorsi specifici all'interno del container. In questo modo i dati critici (sessione, modelli, cache) risiedono direttamente sul filesystem Windows, evitando una crescita incontrollata del file VHDX di WSL2.  
+L'intera directory del progetto (esclusa `node_modules`) è montata in bind mount su `/app` all'interno del container. Questo permette di modificare i file sorgente (`.env`, `index.js`, `server/app.py`, ecc.) e applicare le modifiche semplicemente riavviando il container con `docker-compose restart`. Non è necessaria una ricostruzione a meno che non vengano modificati `package.json` o `requirements.txt`.
 
 ---
 			   
@@ -184,11 +186,42 @@ WhatsApp client is ready!
 
 ### Variabili d'Ambiente
 
- Modificare il file `.env` per trascrivere solo in determinati gruppi come da esempio:
+Per impedire al bot di trascrivere le note vocali in un gruppo WhatsApp specifico:
 
-`GROUPS="123456789@g.us,987654321@g.us"`
+1. **Abilita temporaneamente la visualizzazione degli ID**  
+   Modifica il file `.env` e imposta `SHOW_CHAT_IDS=true`.  
+   Poi riavvia il container:  
+   ```bash
+   docker-compose restart
+   ```
 
+2. **Trova l'ID del gruppo**  
+   Invia un qualsiasi messaggio (anche di testo) nel gruppo che vuoi escludere.  
+   Nei log del container (`docker-compose logs -f`) vedrai una riga simile a:  
+   ```
+   [DEBUG] Messaggio da chat: 1234567890-123456@g.us (isGroup=true) - Tipo: chat
+   ```  
+   La parte `1234567890-123456@g.us` (o che termina con `@lid`) è l'ID del gruppo.
 
+3. **Imposta l'esclusione**  
+   Apri nuovamente `.env` e aggiungi l'ID a `EXCLUDED_GROUPS`. Ad esempio:  
+   ```
+   EXCLUDED_GROUPS=1234567890-123456@g.us
+   ```
+   Per escludere più gruppi, separali con virgole:  
+   ```
+   EXCLUDED_GROUPS=id1@g.us,id2@g.us
+   ```
+
+4. **Riavvia il container**  
+   Dopo aver modificato `.env`, riavvia il container:  
+   ```bash
+   docker-compose restart
+   ```
+
+5. **(Opzionale) Nascondi nuovamente gli ID**  
+   Se preferisci non mostrare gli ID reali nei log, imposta `SHOW_CHAT_IDS=false` in `.env` e riavvia il container un'ultima volta.
+   
 ---
 
 ## Funzionamento
