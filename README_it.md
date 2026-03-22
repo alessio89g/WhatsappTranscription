@@ -102,7 +102,8 @@ WhatsappTranscription/
 ├── .gitignore                  # Esclusioni Git
 ├── package.json                # Dipendenze Node.js
 ├── index.js                    # Bot WhatsApp con supporto per esclusione gruppi
-├── README.md                   # Questo file
+├── README.md                   # README_it.md tradotto in Inglese
+├── README_it.md                # Questo file
 ├── server/
 │   ├── app.py                  # Server FastAPI per la trascrizione
 │   └── requirements.txt        # Dipendenze Python
