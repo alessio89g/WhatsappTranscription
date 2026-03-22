@@ -19,11 +19,25 @@ function logWithTimestamp(...args) {
 
 logWithTimestamp('[INIT] PATH_AUDIO =', process.env.PATH_AUDIO);
 logWithTimestamp('[INIT] GROUPS =', process.env.GROUPS);
+logWithTimestamp('[INIT] EXCLUDED_GROUPS =', process.env.EXCLUDED_GROUPS);
+logWithTimestamp('[INIT] SHOW_CHAT_IDS =', process.env.SHOW_CHAT_IDS);
 logWithTimestamp('[INIT] TZ =', process.env.TZ);
 
 const path_audio = process.env.PATH_AUDIO || '.';
 const groups = process.env.GROUPS || '';
+const excludedGroups = process.env.EXCLUDED_GROUPS || '';
+const showChatIds = process.env.SHOW_CHAT_IDS === 'true';
+
 const allowedGroups = groups.split(',').map(item => item.trim());
+const excludedList = excludedGroups.split(',').map(item => item.trim());
+
+// Funzione per anonimizzare chat ID nei log
+function getSafeChatId(chatId, isGroup) {
+    if (!isGroup) return 'user';
+    if (showChatIds) return chatId;
+    // Mostra solo un hash o parte dell'ID (qui manteniamo solo il prefisso)
+    return chatId.replace(/[0-9]+/g, 'xxx');
+}
 
 process.on('unhandledRejection', (reason, promise) => {
     logWithTimestamp('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
@@ -87,15 +101,6 @@ async function getAudioDuration(filePath) {
 client.on('message_create', async (message) => {
     if (message.from === 'status@broadcast') return;
 
-    let senderAnon = message.from;
-    if (message.from.endsWith('@c.us') || message.from.endsWith('@lid')) {
-        senderAnon = 'user';
-    } else if (message.from.endsWith('@g.us')) {
-        senderAnon = 'group';
-    }
-
-    logWithTimestamp(`[DEBUG] Messaggio da ${senderAnon}, tipo: ${message.type}, media: ${message.hasMedia}`);
-
     try {
         if (!message.hasMedia) return;
 
@@ -109,21 +114,27 @@ client.on('message_create', async (message) => {
         const chat = await message.getChat();
         const isGroup = chat.isGroup;
         const chatId = chat.id._serialized;
+        const safeChatId = getSafeChatId(chatId, isGroup);
 
-        let chatNameAnon = isGroup ? 'group' : 'user';
-
-        const shouldTranscribe = (
-            !isGroup ||
-            allowedGroups.includes(chatId) ||
-            allowedGroups.includes('*')
-        );
+        // Determina se trascrivere
+        let shouldTranscribe = false;
+        if (!isGroup) {
+            shouldTranscribe = true; // messaggi privati sempre trascritti
+        } else {
+            // se la whitelist è '*', escludi quelli in blacklist
+            if (allowedGroups.includes('*')) {
+                shouldTranscribe = !excludedList.includes(chatId);
+            } else {
+                // whitelist esplicita: solo se presente e non escluso
+                shouldTranscribe = allowedGroups.includes(chatId) && !excludedList.includes(chatId);
+            }
+        }
 
         if (!shouldTranscribe) return;
 
         const d = new Date().toISOString();
-        const orig = message.author || message.from;
-        const origAnon = isGroup ? 'user' : senderAnon;
-        logWithTimestamp(`${d}|${origAnon}|${chatNameAnon}${isGroup ? '(GROUP)' : ''}| (audio ricevuto)`);
+        const chatType = isGroup ? 'group' : 'user';
+        logWithTimestamp(`${d}|${chatType}| (audio ricevuto) - Chat ID: ${safeChatId}`);
 
         const suffix = Math.floor(Math.random() * 1000);
         const extension = mime.extension(media.mimetype) || 'ogg';
