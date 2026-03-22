@@ -95,6 +95,7 @@ WhatsappTranscription/
 ├── package.json                # Node.js dependencies
 ├── index.js                    # WhatsApp bot with group exclusion support
 ├── README.md                   # This file
+├── README_it.md                # README.md translated in Italian
 ├── server/
 │   ├── app.py                  # FastAPI transcription server
 │   └── requirements.txt        # Python dependencies
