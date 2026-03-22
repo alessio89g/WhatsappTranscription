@@ -6,26 +6,19 @@ services:
     restart: unless-stopped
     working_dir: /app
     volumes:
-      # Dati di sessione WhatsApp
+      - .:/app
+      - /app/node_modules
       - ./Volumes/session_data:/app/session_data
-      # Cache dei modelli Hugging Face
       - ./Volumes/cache:/root/.cache
-      # Configurazioni e cache di Chrome (inclusi crash report)
       - ./Volumes/root_config:/root/.config
-      # Cache di sistema (font, etc.)
       - ./Volumes/var_cache:/var/cache
-      # Log di sistema
       - ./Volumes/var_log:/var/log
-      # File temporanei persistenti
       - ./Volumes/var_tmp:/var/tmp
-      # Timezone
       - /etc/localtime:/etc/localtime:ro
     tmpfs:
       - /tmp
-    environment:
-      - GROUPS=${GROUPS:-*}
-      - PATH_AUDIO=${PATH_AUDIO:-.}
-      - TZ=${TZ:-Europe/Rome}
+    env_file:
+      - .env
     stdin_open: true
     tty: true
     logging:
