@@ -107,7 +107,7 @@ WhatsappTranscription/
     └── var_tmp/                # Temporary files (persistent)
 ```
 
-Note: All folders under `Volumes/` are mounted as Docker volumes to specific container paths. This keeps critical data (session, models, cache) directly on the Windows filesystem, avoiding uncontrolled growth of the WSL2 VHDX file.  
+> **Note:**  All folders under `Volumes/` are mounted as Docker volumes to specific container paths. This keeps critical data (session, models, cache) directly on the Windows filesystem, avoiding uncontrolled growth of the WSL2 VHDX file.  
 The entire project directory (excluding `node_modules`) is bind-mounted to `/app` inside the container. This allows you to edit source files (`.env`, `index.js`, `server/app.py`, etc.) and apply changes by simply restarting the container with `docker-compose restart`. No rebuild is needed unless you modify `package.json` or `requirements.txt`.
 
 ---
