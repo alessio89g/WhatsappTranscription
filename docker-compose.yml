@@ -3,19 +3,22 @@ services:
     build: .
     image: whatsapptranscription_image
     container_name: whatsapptranscription_container
-    restart: unless-stopped
+    restart: always
     working_dir: /app
     volumes:
       - .:/app
+      # Volume anonimo: protegge il node_modules dell'immagine dal bind mount
+      # sopra. Senza questa riga il container userebbe il node_modules del
+      # filesystem Windows e gli aggiornamenti di package.json non avrebbero
+      # alcun effetto a runtime.
       - /app/node_modules
+      # Sessione Baileys (le credenziali multi-device, in JSON)
       - ./Volumes/session_data:/app/session_data
+      # Cache modelli HuggingFace (il modello di punteggiatura, ~2 GB)
       - ./Volumes/cache:/root/.cache
-      - ./Volumes/root_config:/root/.config
-      - ./Volumes/var_cache:/var/cache
-      - ./Volumes/var_log:/var/log
-      - ./Volumes/var_tmp:/var/tmp
       - /etc/localtime:/etc/localtime:ro
     tmpfs:
+      # I file audio temporanei vivono qui: in RAM, mai su disco
       - /tmp
     env_file:
       - .env

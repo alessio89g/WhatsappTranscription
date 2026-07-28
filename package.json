@@ -1,18 +1,22 @@
 {
-  "name": "whatsapp-transcription-offline",
-  "version": "1.0.0",
-  "description": "WhatsApp bot for offline audio transcription with wav2vec2 OpenVINO",
+  "name": "whatsapp-transcription",
+  "version": "2.0.0",
+  "description": "WhatsApp bot that transcribes voice notes. Baileys (no browser) + FastAPI transcription server.",
   "main": "index.js",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "whatsapp-web.js": "^1.23.0",
-    "qrcode-terminal": "^0.12.0",
-    "mime-types": "^2.1.35",
-    "dotenv": "^16.3.1",
-    "axios": "^1.6.0",
-    "form-data": "^4.0.0"
+    "@whiskeysockets/baileys": "^6.7.9",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "form-data": "^4.0.1",
+    "pino": "^9.6.0",
+    "qrcode-terminal": "^0.12.0"
   },
   "author": "",
   "license": "ISC"

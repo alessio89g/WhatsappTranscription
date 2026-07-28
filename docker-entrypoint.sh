@@ -1,31 +1,40 @@
 #!/bin/bash
-# docker-entrypoint.sh
+set -e
 
-echo "Pulizia file di lock di Chrome in /app/session_data/session/"
-rm -f /app/session_data/session/Singleton*
+PATH_AUDIO="${PATH_AUDIO:-/tmp}"
+SESSION_PATH="${SESSION_PATH:-/app/session_data/baileys_auth}"
 
-# Disabilita core dump
-ulimit -c 0
+log() {
+    echo "[$(date --iso-8601=seconds)] [ENTRYPOINT] $*"
+}
 
-# Pulizia periodica dei file temporanei in /tmp (ogni ora)
+log "Preparazione directory..."
+mkdir -p "$PATH_AUDIO" "$SESSION_PATH" /root/.cache/huggingface
+
+# Migrazione: la vecchia sessione whatsapp-web.js/LocalAuth è inutilizzabile
+# con Baileys. Non la cancelliamo (potrebbe servirti per un rollback), la segnaliamo.
+if [ -d /app/session_data/session ] && [ ! -f "$SESSION_PATH/creds.json" ]; then
+    log "ATTENZIONE: trovata una vecchia sessione whatsapp-web.js in /app/session_data/session."
+    log "ATTENZIONE: Baileys non puo' riutilizzarla: dovrai riscansionare il QR code."
+    log "ATTENZIONE: una volta funzionante puoi cancellare quella cartella a mano."
+fi
+
+# --- Manutenzione: file temporanei in /tmp piu' vecchi di 60 minuti ---
 (
     while true; do
+        find "$PATH_AUDIO" -maxdepth 1 -type f -mmin +60 -delete 2>/dev/null || true
         sleep 3600
-        echo "Pulizia file temporanei in /tmp più vecchi di 1 ora..."
-        find /tmp -type f -mmin +60 -delete 2>/dev/null
-        echo "Pulizia completata."
     done
 ) &
 
-# Pulizia della cache Hugging Face (file non acceduti da 30 giorni) - una volta al giorno
+# --- Manutenzione: residui della cache HuggingFace, una volta al giorno ---
 (
     while true; do
         sleep 86400
-        echo "Pulizia cache Hugging Face (file non acceduti da 30 giorni)..."
-        find /root/.cache/huggingface -type f -atime +30 -delete 2>/dev/null
-        echo "Pulizia completata."
+        find /root/.cache/huggingface -type f -name '*.lock' -atime +30 -delete 2>/dev/null || true
+        find /root/.cache/huggingface -type d -name 'tmp*' -mtime +7 -exec rm -rf {} + 2>/dev/null || true
     done
 ) &
 
-echo "Avvio supervisord..."
+log "Avvio supervisord..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
