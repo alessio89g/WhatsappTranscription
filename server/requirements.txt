@@ -1,8 +1,28 @@
-fastapi
-uvicorn
-numpy
-python-multipart
-SpeechRecognition
-transformers==4.45.2
-torch
+# ------------------------------------------------------------------
+# torch dall'indice CPU-only di PyTorch: evita di scaricare ~2,5 GB
+# di pacchetti nvidia-cublas / cudnn / nccl / triton che su Windows +
+# WSL2 senza GPU passthrough non vengono mai usati.
+# Tutto il resto viene risolto da PyPI grazie a --extra-index-url.
+# ------------------------------------------------------------------
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+
+# --- Web server ---
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
+
+# --- Speech-to-text (invia l'audio ai server Google) ---
+SpeechRecognition==3.10.4
+
+# --- Punteggiatura automatica (modello NLP locale) ---
 deepmultilingualpunctuation==1.0.1
+transformers==4.45.2
+torch==2.5.1
+numpy==1.26.4
+
+# Il modello di punteggiatura è basato su XLM-RoBERTa. Normalmente usa il
+# tokenizer "fast" incluso nel repo HuggingFace; decommenta le righe
+# seguenti solo se all'avvio vedi un errore che richiede il tokenizer slow.
+# sentencepiece==0.2.0
+# protobuf==5.29.3
